@@ -42,9 +42,11 @@ class Gui:
     def applyJoystickAxes(self):
         if self.controller and self.joy:
             x = zero_cap(-self.get_axis('forward'))
-            y = zero_cap((self.get_axis('strafe_left') -
-                          self.get_axis('strafe_right')) / 2.,
-                         0.1)
+            if 'strafe' in joy_conf.axes:
+                y = zero_cap(self.get_axis('strafe'))
+            else:
+                y = zero_cap((self.get_axis('strafe_left') -
+                              self.get_axis('strafe_right')) / 2.)
             a0 = zero_cap(self.get_axis('rotation'))
             theta = -math.copysign(a0 ** 2, a0)
             headYaw = zero_cap(-self.get_axis('head_yaw') * 2)
