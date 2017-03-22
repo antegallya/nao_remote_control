@@ -4,6 +4,10 @@ import pygame
 from pygame.locals import *
 import joy_conf
 
+def zero_cap(x, e = 0.11):
+    if abs(x) <= e: return 0
+    else: return x
+
 class Gui:
 
     controller = None
@@ -26,27 +30,29 @@ class Gui:
         self.joy = pygame.joystick.Joystick(joy_id)
         self.joy.init()
 
-
     def showAxes(self):
         print "==>AXES"
-        for i in range(15):
+        for i in range(self.joy.get_numaxes()):
             print i, ":", self.joy.get_axis(i)
         print "<==AXES"
 
+    def get_axis(self, axis):
+        return self.joy.get_axis(joy_conf.axes[axis])
+
     def applyJoystickAxes(self):
         if self.controller and self.joy:
-            #self.showAxes()
-            x = -self.joy.get_axis(joy_conf.forward)
-            y = (self.joy.get_axis(joy_conf.strafe_left) -
-                 self.joy.get_axis(joy_conf.strafe_right)) / 2.
-            #y = 0
-            a0 = self.joy.get_axis(joy_conf.rotation)
+            x = zero_cap(-self.get_axis('forward'))
+            y = zero_cap((self.get_axis('strafe_left') -
+                          self.get_axis('strafe_right')) / 2.,
+                         0.1)
+            a0 = zero_cap(self.get_axis('rotation'))
             theta = -math.copysign(a0 ** 2, a0)
-            headYaw = -self.joy.get_axis(joy_conf.head_yaw) * 2
-            headPitch = self.joy.get_axis(joy_conf.head_pitch) * 0.5
-            #if x != self.lastx or theta != self.lasttheta:
-            self.lastx = x
+            headYaw = zero_cap(-self.get_axis('head_yaw') * 2)
+            headPitch = zero_cap(self.get_axis('head_pitch') * 0.5)
             self.controller.moveToward(x, y, theta)
+            if x!= self.lastx or theta != self.lasttheta:
+              self.lastx = x
+              self.lasttheta = theta
             if headYaw != self.lastheadYaw or headPitch != self.lastheadPitch:
                 self.lastheadYaw = headYaw
                 self.lastheadPitch = headPitch
@@ -78,21 +84,23 @@ class Gui:
 
     def printButtons(self):
         print "==>BUTTONS"
-        for i in range(11):
+        for i in range(self.joy.get_numbuttons()):
             print i, ":", self.joy.get_button(i)
         print "<==BUTTONS"
 
+    def get_button(self, button):
+        return self.joy.get_button(joy_conf.buttons[button])
+
     def onJoystickButtonDown(self):
-        self.printButtons()
-        if self.joy.get_button(joy_conf.hey_btn):
+        if self.get_button('hey_btn'):
             self.controller.hey()
 #        elif self.joy.get_button(3):
 #            self.toggleAwareness()
-        elif self.joy.get_button(joy_conf.stop_btn):
+        elif self.get_button('stop_btn'):
             self.controller.stopMove()
-        elif self.joy.get_button(joy_conf.rest_btn):
+        elif self.get_button('rest_btn'):
             self.controller.rest()
-        elif self.joy.get_button(joy_conf.wakeup_btn):
+        elif self.get_button('wakeup_btn'):
             self.controller.wakeUp()
 
     def mainloop(self):
@@ -101,12 +109,12 @@ class Gui:
         while done == False:
             # Event processing
             #self.printButtons()
+            #self.showAxes()
             events = pygame.event.get()
             self.applyJoystickAxes()
             for event in events:
                 if event.type == QUIT:
                     done = True
-                #elif event.type == JOYAXISMOTION:
                 elif event.type == JOYBUTTONDOWN:
                     self.onJoystickButtonDown()
                 elif event.type == JOYHATMOTION:
